@@ -54,8 +54,10 @@ optstring(struct skynet_context *ctx, const char *key, const char * str) {
 }
 
 static struct lua_State *
-load_service(struct skynet_context *ctx, const char * args, size_t sz) {
-	lua_State *L = lua_newstate(skynet_lalloc, NULL);
+load_service(struct skynet_context *ctx, const char * args, size_t sz, lua_State *oL) {
+	void *ud = NULL;
+	lua_Alloc alloc = lua_getallocf(oL, &ud);
+	lua_State *L = lua_newstate(alloc, ud);
 	lua_gc(L, LUA_GCSTOP, 0);
 	lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. */
 	lua_setfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
@@ -120,7 +122,7 @@ lreload(lua_State *L) {
 	luaL_checktype(L, -1, LUA_TLIGHTUSERDATA);
 	struct skynet_context *ctx = lua_touserdata(L, -1);
 	lua_pop(L, 1);
-	struct lua_State *nL = load_service(ctx, args, (int)sz);
+	struct lua_State *nL = load_service(ctx, args, (int)sz, L);
 	if (nL == NULL) {
 		return luaL_error(L, "load [%s] failed", args);
 	}
